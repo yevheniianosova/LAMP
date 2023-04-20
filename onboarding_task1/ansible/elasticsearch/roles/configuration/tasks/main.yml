@@ -1,0 +1,50 @@
+- name: create certificate authority
+  ansible.builtin.shell: |
+    /usr/share/elasticsearch/bin/elasticsearch-certutil ca --pem --silent --pass "" --out elastic-stack-ca.zip
+    unzip /usr/share/elasticsearch/elastic-stack-ca.zip -d /usr/share/elasticsearch/
+  become: true
+
+- name: add ca.crt to secret manager
+  ansible.builtin.shell:  gcloud secrets versions add  elasticsearch-ca-crt --data-file=/usr/share/elasticsearch/ca/ca.crt
+  become: true
+
+- name: add ca.key to secret manager
+  ansible.builtin.shell:  gcloud secrets versions add  elasticsearch-ca-key --data-file=/usr/share/elasticsearch/ca/ca.key
+  become: true
+
+- name: create certificates
+  ansible.builtin.shell: |
+    /usr/share/elasticsearch/bin/elasticsearch-certutil cert  --ca-cert ca/ca.crt --ca-key ca/ca.key --ca-pass "" --pem --silent --out certificate-bundle.zip
+    unzip /usr/share/elasticsearch/certificate-bundle.zip -d /usr/share/elasticsearch/
+  become: true
+
+# - name: unarchive certificates
+#   ansible.builtin.unarchive:
+#     src: /usr/share/elasticsearch/certificate-bundle.zip
+#     dest: /usr/share/elasticsearch/
+#   become: true
+
+- name: add instance.crt to secret manager
+  ansible.builtin.shell:  gcloud secrets versions add  elasticsearch-certificate-crt --data-file=/usr/share/elasticsearch/instance/instance.crt
+  become: true
+
+- name: add instance.key to secret manager
+  ansible.builtin.shell:  gcloud secrets versions add  elasticsearch-certificate-key --data-file=/usr/share/elasticsearch/instance/instance.key
+  become: true
+# - name: ls /usr/share/elasticsearch
+#   ansible.builtin.shell: 'ls /usr/share/elasticsearch'
+#   register: command_output
+#   become: true
+# - debug:
+#     var: command_output.stdout_lines
+# - name: move to /tmp/
+#   ansible.builtin.shell: |
+#     mv /usr/share/elasticsearch/elastic-stack-ca.p12 /tmp/elastic-stack-ca.p12
+#     mv /usr/share/elasticsearch/elastic-certificates.p12 /tmp/elastic-certificates.p12
+#   become: true
+# - name: ls /tmp/
+#   ansible.builtin.shell: ls /tmp/
+#   register: command_output
+#   become: true
+# - debug:
+#     var: command_output.stdout_lines

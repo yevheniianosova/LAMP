@@ -1,0 +1,5 @@
+- name: Upload folder to bucket
+  ansible.builtin.shell: gsutil -m cp -r /srv/www/wordpress gs://wordpressbucket2022task #var bucketname
+- name: remove folder
+  ansible.builtin.shell: rm -rf /srv/www/wordpress
+  become: true

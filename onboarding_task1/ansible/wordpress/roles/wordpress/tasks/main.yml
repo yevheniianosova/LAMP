@@ -1,0 +1,93 @@
+
+- name: Create directory
+  file:
+    path: /srv/www
+    state: directory
+    owner: www-data
+    mode: '0777'
+  become: true
+
+
+# - name: Download wordpress
+#   get_url:
+#     url:  https://wordpress.org/latest.tar.gz 
+#     dest: /srv/www/
+#   become: true
+
+- name: Download and Extract wordpress
+  ansible.builtin.unarchive:
+    src: https://wordpress.org/latest.tar.gz 
+    dest: /srv/www
+    remote_src: yes
+  become: true
+
+- name: replace wp-config
+  ansible.builtin.copy:
+    src: /srv/www/wordpress/wp-config-sample.php
+    dest: /srv/www/wordpress/wp-config.php
+  become: true
+    
+- name: edit wp-config
+  ansible.builtin.replace:
+    path: /srv/www/wordpress/wp-config.php
+    regexp: "^define\\( \\'DB_NAME\\'\\, \\'database_name_here\\' \\)\\;"
+    replace: "define( 'DB_NAME', '{{DB_HOST_NAME}}' );"
+  become: true
+
+- name: edit wp-config
+  ansible.builtin.replace:
+    path: /srv/www/wordpress/wp-config.php
+    regexp: "^define\\( \\'DB_USER\\'\\, \\'username_here\\' \\)\\;"
+    replace: "define( 'DB_USER', '{{DB_HOST_USER}}' );"
+  become: true
+
+- name: edit wp-config
+  ansible.builtin.replace:
+    path: /srv/www/wordpress/wp-config.php
+    regexp: "^define\\( \\'DB_HOST\\'\\, \\'localhost\\' \\)\\;"
+    replace: "define( 'DB_HOST', '{{DB_HOST_IP}}' );" #val
+  become: true
+
+- name: edit wp-config
+  ansible.builtin.replace:
+    path: /srv/www/wordpress/wp-config.php
+    regexp: "^define\\( \\'DB_PASSWORD\\'\\, \\'password_here\\' \\)\\;"
+    replace: "define( 'DB_PASSWORD', '{{DB_HOST_PASSWORD}}' );" #val
+  become: true
+
+- name: wp salt
+  ansible.builtin.uri:
+    url: https://api.wordpress.org/secret-key/1.1/salt/
+    return_content: yes
+  register: this
+  become: true
+
+- name: edit wp-config
+  ansible.builtin.replace:
+    path: /srv/www/wordpress/wp-config.php
+    regexp: "^define\\( \\'AUTH_KEY[^\\/\\*]+"
+    replace: "{{this.content}}"
+  become: true
+
+- name: create wordpress.conf
+  ansible.builtin.lineinfile:
+    path: /etc/apache2/sites-available/wordpress.conf
+    line: "<VirtualHost *:80>\n    DocumentRoot /srv/www/wordpress\n    <Directory /srv/www/wordpress>\n        Options FollowSymLinks\n        AllowOverride Limit Options FileInfo\n        DirectoryIndex index.php\n        Require all granted\n    </Directory>\n    <Directory /srv/www/wordpress/wp-content>\n        Options FollowSymLinks\n        Require all granted\n    </Directory>\n</VirtualHost>"
+    create: yes
+  become: true
+
+- name: a2ensite
+  ansible.builtin.shell: |
+    a2ensite wordpress.conf
+    a2dissite 000-default.conf
+    a2enmod rewrite
+  become: true
+
+
+- name: start apache
+  service:
+    name: apache2
+    state: restarted
+    enabled: yes
+  become: true
+

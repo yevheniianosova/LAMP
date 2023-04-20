@@ -1,0 +1,12 @@
+- name: main
+  hosts: all
+  roles:
+  - dependencies
+  - wordpress
+  - gcsfuserole
+  
+  - bucketupload
+  - filebeat
+
+
+

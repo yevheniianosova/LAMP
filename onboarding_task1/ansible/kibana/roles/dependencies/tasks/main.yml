@@ -1,0 +1,28 @@
+- name: add elastic deb
+  shell: |
+   curl -fsSL https://artifacts.elastic.co/GPG-KEY-elasticsearch |sudo gpg --dearmor -o /usr/share/keyrings/elastic.gpg
+   echo "deb [signed-by=/usr/share/keyrings/elastic.gpg] https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+  become: true
+
+- name: update & upgrade
+  ansible.builtin.apt:
+    upgrade: yes
+    update_cache: 'true'
+  become: true
+
+- name: install packages
+  ansible.builtin.apt:
+      pkg:
+      - openjdk-11-jre-headless
+      - kibana
+      - elasticsearch
+      - unzip
+      - nginx
+      - expect
+  become: true
+
+- name: install oauth
+  shell: |
+    (cd /opt && wget https://github.com/oauth2-proxy/oauth2-proxy/releases/download/v7.2.0/oauth2-proxy-v7.2.0.linux-amd64.tar.gz)
+    (cd /opt &&  tar -xzf oauth2-proxy-v7.2.0.linux-amd64.tar.gz)
+  become: true

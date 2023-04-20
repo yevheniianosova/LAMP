@@ -1,0 +1,5 @@
+---
+- hosts: localhost
+  remote_user: root
+  roles:
+    - onboarding_task1/ansible/roles/bucketupload
